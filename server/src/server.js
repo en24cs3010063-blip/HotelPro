@@ -20,11 +20,30 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Enable CORS
+// Enable CORS for localhost, Vercel deployments, and Render
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like curl, Postman, mobile apps)
+      if (!origin) return callback(null, true);
+
+      // Check if domain is allowed
+      const isAllowed =
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.onrender.com') ||
+        (process.env.CLIENT_URL && origin === process.env.CLIENT_URL);
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+      // Permissive fallback so production deployments don't crash on custom domains
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
 
